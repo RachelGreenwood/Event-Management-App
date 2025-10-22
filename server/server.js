@@ -13,14 +13,24 @@ app.use(express.json());
 // Sets up Auth0 authentication
 const client = jwksClient({
   jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`,
+  cache: true,
+  rateLimit: true,
+  jwksRequestsPerMinute: 5,
 });
 
 function getKey(header, callback) {
   client.getSigningKey(header.kid, (err, key) => {
+    if (err || !key) {
+      console.error("Failed to get signing key:", err || "No key returned");
+      // Pass error to callback instead of throwing
+      return callback(err || new Error("No signing key found"));
+    }
     const signingKey = key.getPublicKey();
     callback(null, signingKey);
   });
 }
+
+
 
 function verifyJwt(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
@@ -45,11 +55,34 @@ function verifyJwt(req, res, next) {
 // Adds profile
 const router = express.Router();
 
+// GET profile for the authenticated user
+router.get("/", verifyJwt, async (req, res) => {
+  try {
+    // Fully qualified table name: public.profiles
+    const result = await pool.query(
+      `SELECT * FROM profiles WHERE auth0_id = $1`,
+      [req.user.sub]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+
+    // Return the first row (there should only be one per user)
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
+});
+
+// POST (create or update) profile for the authenticated user
 router.post("/", verifyJwt, async (req, res) => {
   const { name, email, role } = req.body;
   const auth0_id = req.user.sub;
 
   try {
+    // Fully qualified table name: public.profiles
     const result = await pool.query(
       `INSERT INTO profiles (auth0_id, name, email, role)
        VALUES ($1, $2, $3, $4)
@@ -58,12 +91,15 @@ router.post("/", verifyJwt, async (req, res) => {
        RETURNING *`,
       [auth0_id, name, email, role]
     );
+
+    // Return the inserted or updated row
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Database error");
+    console.error("Database error:", err);
+    res.status(500).json({ message: "Database error" });
   }
 });
+
 
 app.use("/api/profile", router);
 
