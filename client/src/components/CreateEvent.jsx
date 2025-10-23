@@ -61,6 +61,10 @@ export default function CreateEvent() {
                 <label>Description: </label>
                 <textarea name="description" value={formData.description} onChange={handleChange} rows="4" />
             </div>
+            <div>
+                <label>Venue: </label>
+                <input type="text" name="venue" value={formData.venue} onChange={handleChange} />
+            </div>
         </form>
     </div>
   )
