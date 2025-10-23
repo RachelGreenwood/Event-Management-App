@@ -113,6 +113,7 @@ export default function CreateEvent() {
               <label>Event Schedule: </label>
               <textarea name="schedule" value={formData.schedule} onChange={handleChange} rows={"2"} />
             </div>
+            <button type="submit">Create Event</button>
         </form>
     </div>
   )
