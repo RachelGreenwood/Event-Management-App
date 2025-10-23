@@ -115,6 +115,10 @@ export default function CreateEvent({userId}) {
               <label>Event Schedule: </label>
               <textarea name="schedule" value={formData.schedule} onChange={handleChange} rows={"2"} />
             </div>
+            <div>
+              <label>Performer: </label>
+              <input type="text" name="performer" onChange={handleChange} value={formData.performer} />
+            </div>
             <button type="submit">Create Event</button>
         </form>
     </div>
