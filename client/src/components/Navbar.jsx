@@ -1,10 +1,11 @@
+import AuthenticationButton from "./AuthenticationButton"
+
 export default function Navbar() {
     return (
         <div>
             <nav>
                 <ul>
-                    <li>Login</li>
-                    <li>Profile</li>
+                    <li><AuthenticationButton /></li>
                 </ul>
             </nav>
         </div>
