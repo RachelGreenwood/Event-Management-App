@@ -57,6 +57,10 @@ export default function CreateEvent() {
                 <label>Event Date: </label>
                 <input type="date" name="date" value={formData.event_date} onChange={handleChange} />
             </div>
+            <div>
+                <label>Description: </label>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows="4" />
+            </div>
         </form>
     </div>
   )
