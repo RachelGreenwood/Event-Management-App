@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import ChooseRole from "./components/ChooseRole.jsx";
 import HomePage from "./components/HomePage.jsx";
 import Dashboard from "./components/Dashboard.jsx";
+import NavBar from "./components/Navbar.jsx";
 
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, getAccessTokenSilently } = useAuth0();
@@ -73,6 +74,7 @@ function App() {
 
   return (
     <div>
+      <Navbar />
       {!isAuthenticated ? (
         <button onClick={() => loginWithRedirect()}>Log In</button>
       ) : (
