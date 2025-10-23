@@ -9,40 +9,9 @@ import Navbar from "./components/Navbar.jsx";
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, getAccessTokenSilently } = useAuth0();
 
-  function AuthRedirect() {
-  const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-
-    const checkProfile = async () => {
-      const token = await getAccessTokenSilently();
-      const res = await fetch("http://localhost:5000/api/profile", {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const profile = await res.json();
-
-      if (!profile.role) {
-        // If no role set yet, redirect to ChooseRole page
-        navigate("/choose-role");
-      } else {
-        // Otherwise go home
-        navigate("/");
-      }
-    };
-
-    checkProfile();
-  }, [isAuthenticated, user, getAccessTokenSilently, navigate]);
-
-  return null;
-}
-
   return (
     <div>
       <Navbar />
-      <AuthRedirect />
       <Routes>
         <Route path="/" element={<HomePage />} />
       <Route path="/choose-role" element={<ChooseRole />} />
