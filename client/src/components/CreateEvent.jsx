@@ -17,6 +17,39 @@ export default function CreateEvent() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+    // Handle ticket type/price array changes
+  const handleTicketChange = (index, field, value) => {
+    const updatedTickets = [...formData.ticket_types];
+    const updatedPrices = [...formData.prices];
+
+    if (field === "type") {
+      updatedTickets[index] = value;
+    } else {
+      updatedPrices[index] = value;
+    }
+
+    setFormData({ ...formData, ticket_types: updatedTickets, prices: updatedPrices });
+  };
+
+  // Add icket type
+  const addTicketField = () => {
+    setFormData({
+      ...formData,
+      ticket_types: [...formData.ticket_types, ""],
+      prices: [...formData.prices, ""],
+    });
+  };
+
+  // Remove ticket type
+  const removeTicketField = (index) => {
+    const updatedTickets = [...formData.ticket_types];
+    const updatedPrices = [...formData.prices];
+    updatedTickets.splice(index, 1);
+    updatedPrices.splice(index, 1);
+    setFormData({ ...formData, ticket_types: updatedTickets, prices: updatedPrices });
+  };
+
+
 //   Handles submit button
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +93,17 @@ export default function CreateEvent() {
             <div>
                 <label>Description: </label>
                 <textarea name="description" value={formData.description} onChange={handleChange} rows="4" />
+            </div>
+            <div>
+              <label>Ticket Types and Prices</label>
+              {formData.ticket_types.map((type, index) => (
+                <div key={index}>
+                  <input type="text" placeholder="Ticket Type (e.g. VIP)" value={type} onChange={(e) => handleTicketChange(index, "type", e.target.value)} />
+                  <input type="number" placeholder="Price (in $USD)" value={formData.prices[index]} onChange={(e) => handleTicketChange(index, "price", e.target.value)} />
+                  <button type="button" onClick={() => removeTicketField(index)}>Remove Ticket Type</button>
+                </div>
+              ))}
+              <button type="button" onClick={addTicketField}>Add Ticket Type</button>
             </div>
             <div>
                 <label>Venue: </label>
