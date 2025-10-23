@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
-export default function CreateEvent() {
+export default function CreateEvent({userId}) {
     const [formData, setFormData] = useState({
         name: "",
         event_date: "",
@@ -88,7 +90,7 @@ export default function CreateEvent() {
             </div>
             <div>
                 <label>Event Date: </label>
-                <input type="date" name="date" value={formData.event_date} onChange={handleChange} />
+                <DatePicker selected={formData.event_date} onChange={(date) => setFormData({...formData, event_date: date})} showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="yyyy--MM-dd HH:mm" />
             </div>
             <div>
                 <label>Description: </label>
