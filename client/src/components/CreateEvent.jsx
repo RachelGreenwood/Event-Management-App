@@ -65,6 +65,10 @@ export default function CreateEvent() {
                 <label>Venue: </label>
                 <input type="text" name="venue" value={formData.venue} onChange={handleChange} />
             </div>
+            <div>
+              <label>Event Schedule: </label>
+              <textarea name="schedule" value={formData.schedule} onChange={handleChange} rows={"2"} />
+            </div>
         </form>
     </div>
   )
