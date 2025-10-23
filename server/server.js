@@ -101,6 +101,36 @@ router.post("/", verifyJwt, async (req, res) => {
 });
 
 
+// Organizer can add an event
+app.post("/events", async (req, res) => {
+  try {
+    const {
+      name,
+      event_date,
+      description,
+      ticket_types,
+      prices,
+      venue,
+      schedule,
+      performer,
+      created_by
+    } = req.body;
+
+    const newEvent = await pool.query(
+      `INSERT INTO events 
+      (name, event_date, description, ticket_types, prices, venue, schedule, performer, created_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *`,
+      [name, event_date, description, ticket_types, prices, venue, schedule, performer, created_by]
+    );
+
+    res.json(newEvent.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
+  }
+});
+
 app.use("/api/profile", router);
 
 const PORT = process.env.PORT || 5000;
