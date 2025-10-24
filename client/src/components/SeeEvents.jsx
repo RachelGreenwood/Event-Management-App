@@ -42,7 +42,7 @@ export default function SeeEvents() {
             {events.map((event) => (
               <tr key={event.id}>
                 <td>{event.name}</td>
-                <td>{event.event_date}</td>
+                <td>{new Date(event.event_date).toLocaleString()}</td>
                 <td>{event.venue}</td>
               </tr>
             ))}
