@@ -8,6 +8,7 @@ export default function Navbar({ profile }) {
             <nav>
                 <ul>
                     <li><AuthenticationButton /></li>
+                    <li><Link to="/dashboard">Dashboard</Link></li>
                     {profile?.role === "organizer" && (
                         <li><Link to="/create-event">Create an Event</Link></li>
                     )}
