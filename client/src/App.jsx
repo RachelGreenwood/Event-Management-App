@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar.jsx";
 import CreateEvent from "./components/CreateEvent.jsx";
 import SeeEvents from "./components/SeeEvents.jsx";
 import MyEvents from "./components/MyEvents.jsx";
+import Event from "./components/Event.jsx";
 
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, getAccessTokenSilently } = useAuth0();
@@ -22,6 +23,7 @@ function App() {
       <Route path="/create-event" element={<CreateEvent />} /> 
       <Route path="/events" element={<SeeEvents />} />
       <Route path="/my-events" element={<MyEvents />} />
+      <Route path="/event" element={<Event />} />
     </Routes>
     </div>
   );
