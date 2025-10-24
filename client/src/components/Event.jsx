@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
+import Analytics from "./Analytics";
 
 export default function Event() {
   const { eventId } = useParams();
@@ -38,6 +39,7 @@ export default function Event() {
       <p>Tickets: {event.ticket_types?.map((t, i) => (
         <span key={i}>{t} (${event.prices[i]}) </span>
       ))}</p>
+      <Analytics />
     </div>
   );
 }
