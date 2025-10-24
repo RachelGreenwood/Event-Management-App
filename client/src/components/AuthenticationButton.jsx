@@ -21,9 +21,9 @@ export default function AuthenticationButton() {
         });
 
         if (response.status === 404) {
-          navigate("/profile-setup"); // New user → profile setup
+          navigate("/choose-role");
         } else if (response.ok) {
-          navigate("/dashboard"); // Returning user → dashboard
+          navigate("/dashboard");
         }
       } catch (err) {
         console.error("Error checking profile:", err);
