@@ -100,6 +100,17 @@ router.post("/", verifyJwt, async (req, res) => {
   }
 });
 
+// GET all events from events table
+app.get("/events", verifyJwt, async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM events ORDER BY event_date ASC`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Database error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
+});
+
 
 // Organizer can add an event
 app.post("/events", async (req, res) => {
