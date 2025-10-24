@@ -6,6 +6,7 @@ import HomePage from "./components/HomePage.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Navbar from "./components/Navbar.jsx";
 import CreateEvent from "./components/CreateEvent.jsx";
+import SeeEvents from "./components/SeeEvents.jsx";
 
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, getAccessTokenSilently } = useAuth0();
@@ -18,6 +19,7 @@ function App() {
       <Route path="/choose-role" element={<ChooseRole />} />
       <Route path="/dashboard" element={<Dashboard />} />   
       <Route path="/create-event" element={<CreateEvent />} /> 
+      <Route path="/events" element={<SeeEvents />} />
     </Routes>
     </div>
   );
