@@ -42,7 +42,7 @@ export default function MyEvents() {
           <tbody>
             {myEvents.map((event) => (
               <tr key={event.id}>
-                <td><Link to="/event/:eventId">{event.name}</Link></td>
+                <td><Link to={`/event/${event.id}`}>{event.name}</Link></td>
                 <td>{event.description}</td>
                 <td>{new Date(event.event_date).toLocaleString()}</td>
               </tr>
