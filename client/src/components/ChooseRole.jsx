@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
-export default function ChooseRole() {
+export default function ChooseRole(props) {
   const { user, getAccessTokenSilently, getAccessTokenWithPopup } = useAuth0();
   const [role, setRole] = useState("attendee");
   const navigate = useNavigate();
@@ -49,12 +49,15 @@ try {
       if (!response.ok) throw new Error("Failed to save role");
 
       // After successful save, navigate to dashboard/home page
+      const createdProfile = await response.json();
+      props.setProfile(createdProfile);
       navigate("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Error saving role. Please try again.");
     }
   };
+
 
   return (
      <form onSubmit={handleSubmit}>

@@ -156,6 +156,9 @@ app.get("/events/user/:auth0Id", async (req, res) => {
       "SELECT id FROM profiles WHERE auth0_id = $1",
       [auth0Id]
     );
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
     const profileId = profileResult.rows[0].id;
     const result = await pool.query(
       "SELECT * FROM events WHERE created_by = $1 ORDER BY event_date DESC",
