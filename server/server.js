@@ -113,9 +113,8 @@ app.get("/events", verifyJwt, async (req, res) => {
 
 
 // Organizer can add an event
-app.post("/events", async (req, res) => {
-  try {
-    const {
+app.post("/events", verifyJwt, async (req, res) => {
+  const {
       name,
       event_date,
       description,
@@ -124,15 +123,21 @@ app.post("/events", async (req, res) => {
       venue,
       schedule,
       performer,
-      created_by
     } = req.body;
+    const auth0Id = req.user.sub;
 
+  try {
+    const profileResult = await pool.query(
+      "SELECT id FROM profiles WHERE auth0_id = $1",
+      [auth0Id]
+    );
+    const profileId = profileResult.rows[0].id;
     const newEvent = await pool.query(
       `INSERT INTO events 
       (name, event_date, description, ticket_types, prices, venue, schedule, performer, created_by)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *`,
-      [name, event_date, description, ticket_types, prices, venue, schedule, performer, created_by]
+      [name, event_date, description, ticket_types, prices, venue, schedule, performer, profileId]
     );
 
     res.json(newEvent.rows[0]);

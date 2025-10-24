@@ -1,18 +1,20 @@
 import React, { useState } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export default function CreateEvent({userId}) {
-    const [formData, setFormData] = useState({
-        name: "",
-        event_date: "",
-        description: "",
-        ticket_types: [""],
-        prices: [""],
-        venue: "",
-        schedule: "",
-        performer: "",
-    });
+  const { getAccessTokenSilently, user } = useAuth0();
+  const [formData, setFormData] = useState({
+      name: "",
+      event_date: "",
+      description: "",
+      ticket_types: [""],
+      prices: [""],
+      venue: "",
+      schedule: "",
+      performer: "",
+  });
 
     // Updates form with user's input
     const handleChange = (e) => {
@@ -58,9 +60,13 @@ export default function CreateEvent({userId}) {
 
     // Sends event data to BE
      try {
+      const token = await getAccessTokenSilently();
       const res = await fetch("http://localhost:5000/events", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify({
           ...formData,
           prices: formData.prices.map(Number),
