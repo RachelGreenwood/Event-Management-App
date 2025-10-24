@@ -147,6 +147,28 @@ app.post("/events", verifyJwt, async (req, res) => {
   }
 });
 
+// Get all events created by a specific user
+app.get("/events/user/:auth0Id", async (req, res) => {
+  const { auth0Id } = req.params;
+
+  try {
+    const profileResult = await pool.query(
+      "SELECT id FROM profiles WHERE auth0_id = $1",
+      [auth0Id]
+    );
+    const profileId = profileResult.rows[0].id;
+    const result = await pool.query(
+      "SELECT * FROM events WHERE created_by = $1 ORDER BY event_date DESC",
+      [profileId]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching user events:", err);
+    res.status(500).json({ error: "Failed to fetch user events" });
+  }
+});
+
 app.use("/api/profile", router);
 
 const PORT = process.env.PORT || 5000;
