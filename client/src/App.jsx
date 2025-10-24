@@ -23,7 +23,7 @@ function App() {
       <Route path="/create-event" element={<CreateEvent />} /> 
       <Route path="/events" element={<SeeEvents />} />
       <Route path="/my-events" element={<MyEvents />} />
-      <Route path="/event" element={<Event />} />
+      <Route path="/event/:eventId" element={<Event />} />
     </Routes>
     </div>
   );
