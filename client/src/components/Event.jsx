@@ -37,7 +37,7 @@ export default function Event() {
       <p>Schedule: {event.schedule}</p>
       <p>Performer: {event.performer}</p>
       <p>Tickets: {event.ticket_types?.map((t, i) => (
-        <span key={i}>{t} (${event.prices[i]}) </span>
+        <span key={i}>{t} (${event.prices[i]}) <button>Buy Ticket</button> </span>
       ))}</p>
       <Analytics />
     </div>
