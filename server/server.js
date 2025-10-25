@@ -187,6 +187,40 @@ app.get("/events/:eventId", verifyJwt, async (req, res) => {
   }
 });
 
+// GET all tickets a user has bought
+app.get("/tickets/my", verifyJwt, async (req, res) => {
+  const auth0Id = req.user.sub;
+
+  try {
+    const profileResult = await pool.query(
+      "SELECT id FROM profiles WHERE auth0_id = $1",
+      [auth0Id]
+    );
+
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ error: "User profile not found" });
+    }
+
+    const profileId = profileResult.rows[0].id;
+
+    // Join tickets with events to get event info
+    const ticketsResult = await pool.query(
+      `SELECT t.id AS ticket_id, t.ticket_type, t.price, t.purchase_date,
+              e.id AS event_id, e.name AS event_name, e.event_date, e.venue
+       FROM tickets t
+       JOIN events e ON t.event_id = e.id
+       WHERE t.profile_id = $1
+       ORDER BY t.purchase_date DESC`,
+      [profileId]
+    );
+
+    res.json(ticketsResult.rows);
+  } catch (err) {
+    console.error("Error fetching tickets:", err);
+    res.status(500).json({ error: "Failed to fetch tickets" });
+  }
+});
+
 app.use("/api/profile", router);
 
 const PORT = process.env.PORT || 5000;
