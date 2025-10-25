@@ -188,7 +188,7 @@ app.get("/events/:eventId", verifyJwt, async (req, res) => {
 });
 
 // GET all tickets a user has bought
-app.get("/tickets/my", verifyJwt, async (req, res) => {
+app.get("/tickets/user", verifyJwt, async (req, res) => {
   const auth0Id = req.user.sub;
 
   try {
