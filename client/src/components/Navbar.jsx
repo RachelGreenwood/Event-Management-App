@@ -16,6 +16,7 @@ export default function Navbar({ profile }) {
                     {profile?.role === "organizer" && (
                         <li><Link to="/my-events">My Events</Link></li>
                     )}
+                    <li><Link to="/my-tickets">My Tickets</Link></li>
                 </ul>
             </nav>
         </div>
