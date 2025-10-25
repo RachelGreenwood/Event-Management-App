@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import Analytics from "./Analytics";
+import TicketCheckout from "./TicketCheckout";
 
 export default function Event() {
   const { eventId } = useParams();
-  const { getAccessTokenSilently } = useAuth0();
+  const { getAccessTokenSilently, user } = useAuth0();
   const [event, setEvent] = useState(null);
 
   useEffect(() => {
@@ -36,9 +37,9 @@ export default function Event() {
       <p>Venue:{event.venue}</p>
       <p>Schedule: {event.schedule}</p>
       <p>Performer: {event.performer}</p>
-      <p>Tickets: {event.ticket_types?.map((t, i) => (
-        <span key={i}>{t} (${event.prices[i]}) <button>Buy Ticket</button> </span>
-      ))}</p>
+      <div>Tickets: {event.ticket_types?.map((t, i) => (
+        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} userId={user?.sub} eventId={eventId} /></div>
+      ))}</div>
       <Analytics />
     </div>
   );

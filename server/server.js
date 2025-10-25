@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import pool from "./db.js";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
+import Stripe from "stripe";
 
 dotenv.config();
 const app = express();
@@ -54,6 +55,7 @@ function verifyJwt(req, res, next) {
 
 // Adds profile
 const router = express.Router();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // GET profile for the authenticated user
 router.get("/", verifyJwt, async (req, res) => {
@@ -218,6 +220,29 @@ app.get("/tickets/user", verifyJwt, async (req, res) => {
   } catch (err) {
     console.error("Error fetching tickets:", err);
     res.status(500).json({ error: "Failed to fetch tickets" });
+  }
+});
+
+// Handles Stripe payments (in cents)
+app.post("/create-payment-intent", async (req, res) => {
+  const { amount, currency = "usd" } = req.body;
+  console.log("Received amount:", amount);
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: err.message });
   }
 });
 
