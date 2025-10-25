@@ -9,6 +9,7 @@ import CreateEvent from "./components/CreateEvent.jsx";
 import SeeEvents from "./components/SeeEvents.jsx";
 import MyEvents from "./components/MyEvents.jsx";
 import Event from "./components/Event.jsx";
+import MyTickets from "./components/MyTickets.jsx";
 
 function App() {
   const { loginWithRedirect, logout, user, isAuthenticated, getAccessTokenSilently } = useAuth0();
@@ -46,6 +47,7 @@ function App() {
       <Route path="/events" element={<SeeEvents />} />
       <Route path="/my-events" element={<MyEvents />} />
       <Route path="/event/:eventId" element={<Event />} />
+      <Route path="/my-tickets" element={<MyTickets />} />
     </Routes>
     </div>
   );
