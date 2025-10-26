@@ -10,6 +10,7 @@ export default function Event() {
   const [event, setEvent] = useState(null);
   const [ticketSales, setTicketSales] = useState(0);
   const [revenue, setRevenue] = useState(0);
+  const [expired, setExpired] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -30,6 +31,21 @@ export default function Event() {
 
     fetchEvent();
   }, [eventId, getAccessTokenSilently]);
+
+  useEffect(() => {
+  if (!event?.end_date) return;
+
+  const endDate = new Date(event.end_date);
+  const checkExpiration = () => {
+    setExpired(Date.now() > endDate.getTime());
+  };
+
+  checkExpiration(); // run once immediately
+  const interval = setInterval(checkExpiration, 60 * 1000); // recheck every minute
+
+  return () => clearInterval(interval);
+}, [event]);
+
 
   const handleTicketPurchase = async (amount) => {
   try {
@@ -64,7 +80,7 @@ export default function Event() {
       <p>Schedule: {event.schedule}</p>
       <p>Performer: {event.performer}</p>
       <div>Tickets: {event.ticket_types?.map((t, i) => (
-        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
+        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
       ))}</div>
       <Analytics ticketSales={ticketSales} revenue={revenue} />
     </div>

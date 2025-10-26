@@ -5,7 +5,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold }) => {
+const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold, expired }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState(null);
@@ -15,6 +15,12 @@ const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold }) => 
 //   Handles ticket payments (in cents)
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (expired) {
+      setError("Event has ended. Ticket puchases are closed");
+      return;
+    }
+
     // Handles free tickets
     if (amount === 0) {
     setSuccess(true);
@@ -69,8 +75,12 @@ const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold }) => 
   return (
     <form onSubmit={handleSubmit}>
       <CardElement />
-      <button type="submit" disabled={!stripe}>
-        {amount === 0 ? "Get Ticket (Free)" : `Pay $${amount}`}
+      <button type="submit" disabled={!stripe || expired}>
+        {expired
+          ? "Event Ended"
+          : amount === 0
+          ? "Get Ticket (Free)"
+          : `Pay $${amount}`}
       </button>
       {error && <div>{error}</div>}
       {success && <div>Payment successful!</div>}
@@ -78,10 +88,10 @@ const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold }) => 
   );
 };
 
-export default function TicketCheckout({ amount, userId, eventId, ticketType, onTicketSold }) {
+export default function TicketCheckout({ amount, userId, eventId, ticketType, onTicketSold, expired }) {
   return (
     <Elements stripe={stripePromise}>
-      <CheckoutForm amount={amount} userId={userId} eventId={eventId} ticketType={ticketType} onTicketSold={onTicketSold} />
+      <CheckoutForm amount={amount} userId={userId} eventId={eventId} ticketType={ticketType} onTicketSold={onTicketSold} expired={expired} />
     </Elements>
   );
 }
