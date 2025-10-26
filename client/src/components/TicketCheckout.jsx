@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useAuth0 } from "@auth0/auth0-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -9,6 +10,7 @@ const CheckoutForm = ({ amount, userId, eventId }) => {
   const elements = useElements();
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const { getAccessTokenSilently } = useAuth0();
 
 //   Handles ticket payments (in cents)
   const handleSubmit = async (e) => {
@@ -16,9 +18,13 @@ const CheckoutForm = ({ amount, userId, eventId }) => {
     // Handles free tickets
     if (amount === 0) {
     setSuccess(true);
+    const token = await getAccessTokenSilently();
     await fetch("http://localhost:5000/register-free-ticket", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+    },
       body: JSON.stringify({ userId, eventId }),
     });
     return;
@@ -41,8 +47,22 @@ const CheckoutForm = ({ amount, userId, eventId }) => {
       setError(result.error.message);
     } else if (result.paymentIntent.status === "succeeded") {
       setSuccess(true);
+        // Register ticket in database
+  await fetch("http://localhost:5000/register-paid-ticket", {
+    method: "POST",
+    headers: { 
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await getAccessTokenSilently()}`
+    },
+    body: JSON.stringify({
+      eventId,
+      ticketType: ticketType,
+      price: amount
+    }),
     }
+)
   };
+}
 
   return (
     <form onSubmit={handleSubmit}>

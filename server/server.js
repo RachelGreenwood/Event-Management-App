@@ -246,6 +246,64 @@ app.post("/create-payment-intent", async (req, res) => {
   }
 });
 
+// Register a paid ticket to a user
+app.post("/register-paid-ticket", verifyJwt, async (req, res) => {
+  const { eventId, ticketType, price } = req.body;
+  const auth0Id = req.user.sub;
+
+  try {
+    const profileResult = await pool.query(
+      "SELECT id FROM profiles WHERE auth0_id = $1",
+      [auth0Id]
+    );
+    if (profileResult.rows.length === 0)
+      return res.status(404).json({ error: "User profile not found" });
+
+    const profileId = profileResult.rows[0].id;
+
+    const ticketResult = await pool.query(
+      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING *`,
+      [profileId, eventId, ticketType, price]
+    );
+
+    res.json(ticketResult.rows[0]);
+  } catch (err) {
+    console.error("Error registering paid ticket:", err);
+    res.status(500).json({ error: "Failed to register paid ticket" });
+  }
+});
+
+// Register a free ticket to a user
+app.post("/register-free-ticket", verifyJwt, async (req, res) => {
+  const { eventId } = req.body;
+  const auth0Id = req.user.sub;
+
+  try {
+    const profileResult = await pool.query(
+      "SELECT id FROM profiles WHERE auth0_id = $1",
+      [auth0Id]
+    );
+    if (profileResult.rows.length === 0)
+      return res.status(404).json({ error: "User profile not found" });
+
+    const profileId = profileResult.rows[0].id;
+
+    const ticketResult = await pool.query(
+      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date)
+       VALUES ($1, $2, $3, $4, NOW())
+       RETURNING *`,
+      [profileId, eventId, "Free", 0]
+    );
+
+    res.json(ticketResult.rows[0]);
+  } catch (err) {
+    console.error("Error registering free ticket:", err);
+    res.status(500).json({ error: "Failed to register free ticket" });
+  }
+});
+
 app.use("/api/profile", router);
 
 const PORT = process.env.PORT || 5000;
