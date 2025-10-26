@@ -82,7 +82,7 @@ export default function Event() {
       <div>Tickets: {event.ticket_types?.map((t, i) => (
         <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
       ))}</div>
-      <Analytics ticketSales={ticketSales} revenue={revenue} />
+      <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} />
     </div>
   );
 }
