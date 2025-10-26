@@ -5,7 +5,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = ({ amount, userId, eventId, ticketType }) => {
+const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState(null);
@@ -27,6 +27,7 @@ const CheckoutForm = ({ amount, userId, eventId, ticketType }) => {
     },
       body: JSON.stringify({ userId, eventId }),
     });
+    onTicketSold();
     return;
   }
     console.log("Sending amount to server:", amount, "converted:", amount * 100);
@@ -61,6 +62,7 @@ const CheckoutForm = ({ amount, userId, eventId, ticketType }) => {
       price: amount,
     }),
     });
+    onTicketSold();
   }
 }
 
@@ -76,10 +78,10 @@ const CheckoutForm = ({ amount, userId, eventId, ticketType }) => {
   );
 };
 
-export default function TicketCheckout({ amount, userId, eventId, ticketType }) {
+export default function TicketCheckout({ amount, userId, eventId, ticketType, onTicketSold }) {
   return (
     <Elements stripe={stripePromise}>
-      <CheckoutForm amount={amount} userId={userId} eventId={eventId} ticketType={ticketType} />
+      <CheckoutForm amount={amount} userId={userId} eventId={eventId} ticketType={ticketType} onTicketSold={onTicketSold} />
     </Elements>
   );
 }

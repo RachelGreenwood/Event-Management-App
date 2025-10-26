@@ -8,6 +8,7 @@ export default function Event() {
   const { eventId } = useParams();
   const { getAccessTokenSilently, user } = useAuth0();
   const [event, setEvent] = useState(null);
+  const [ticketSales, setTicketSales] = useState(0);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -38,9 +39,9 @@ export default function Event() {
       <p>Schedule: {event.schedule}</p>
       <p>Performer: {event.performer}</p>
       <div>Tickets: {event.ticket_types?.map((t, i) => (
-        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} /></div>
+        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} onTicketSold={() => setTicketSales(prev => prev + 1)} /></div>
       ))}</div>
-      <Analytics />
+      <Analytics ticketSales={ticketSales} />
     </div>
   );
 }
