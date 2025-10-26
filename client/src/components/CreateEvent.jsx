@@ -8,6 +8,7 @@ export default function CreateEvent({userId}) {
   const [formData, setFormData] = useState({
       name: "",
       event_date: "",
+      end_date: "",
       description: "",
       ticket_types: [""],
       prices: [""],
@@ -97,6 +98,10 @@ export default function CreateEvent({userId}) {
             <div>
                 <label>Event Date: </label>
                 <DatePicker selected={formData.event_date} onChange={(date) => setFormData({...formData, event_date: date})} showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="yyyy--MM-dd HH:mm" />
+            </div>
+            <div>
+              <label>End Date: </label>
+              <DatePicker selected={formData.end_date} onChange={(date) => setFormData({...formData, end_date: date })} showTimeSelect timeFormat="HH:mm" timeIntervals={15} dateFormat="yyyy--MM--dd HH:mm" />
             </div>
             <div>
                 <label>Description: </label>

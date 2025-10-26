@@ -125,6 +125,7 @@ app.post("/events", verifyJwt, async (req, res) => {
       venue,
       schedule,
       performer,
+      end_date,
     } = req.body;
     const auth0Id = req.user.sub;
 
@@ -136,10 +137,10 @@ app.post("/events", verifyJwt, async (req, res) => {
     const profileId = profileResult.rows[0].id;
     const newEvent = await pool.query(
       `INSERT INTO events 
-      (name, event_date, description, ticket_types, prices, venue, schedule, performer, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      (name, event_date, description, ticket_types, prices, venue, schedule, performer, created_by, end_date)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *`,
-      [name, event_date, description, ticket_types, prices, venue, schedule, performer, profileId]
+      [name, event_date, description, ticket_types, prices, venue, schedule, performer, profileId, end_date]
     );
 
     res.json(newEvent.rows[0]);
