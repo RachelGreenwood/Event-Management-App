@@ -21,6 +21,7 @@ export default function MyTickets() {
       });
       if (!response.ok) throw new Error("Failed to fetch user events");
       const data = await response.json();
+      console.log(data);
       setEvents(data);
     } catch (err) {
       console.error("Error fetching user events:", err);
@@ -41,7 +42,7 @@ export default function MyTickets() {
                 <tbody>
                     {events.map((event) => (
                     <tr key={event.id}>
-                        <td>{event.name}</td>
+                        <td>{event.event_name}</td>
                         <td>{new Date(event.event_date).toLocaleString()}</td>
                         <td>{event.venue}</td>
                     </tr>
