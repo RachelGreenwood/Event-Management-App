@@ -5,7 +5,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = ({ amount, userId, eventId }) => {
+const CheckoutForm = ({ amount, userId, eventId, ticketType }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState(null);
@@ -48,20 +48,20 @@ const CheckoutForm = ({ amount, userId, eventId }) => {
     } else if (result.paymentIntent.status === "succeeded") {
       setSuccess(true);
         // Register ticket in database
+        const token = await getAccessTokenSilently();
   await fetch("http://localhost:5000/register-paid-ticket", {
     method: "POST",
     headers: { 
       "Content-Type": "application/json",
-      Authorization: `Bearer ${await getAccessTokenSilently()}`
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
       eventId,
-      ticketType: ticketType,
-      price: amount
+      ticketType,
+      price: amount,
     }),
-    }
-)
-  };
+    });
+  }
 }
 
   return (
@@ -76,10 +76,10 @@ const CheckoutForm = ({ amount, userId, eventId }) => {
   );
 };
 
-export default function TicketCheckout({ amount, userId, eventId }) {
+export default function TicketCheckout({ amount, userId, eventId, ticketType }) {
   return (
     <Elements stripe={stripePromise}>
-      <CheckoutForm amount={amount} userId={userId} eventId={eventId} />
+      <CheckoutForm amount={amount} userId={userId} eventId={eventId} ticketType={ticketType} />
     </Elements>
   );
 }

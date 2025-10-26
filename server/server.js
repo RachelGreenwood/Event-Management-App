@@ -249,6 +249,7 @@ app.post("/create-payment-intent", async (req, res) => {
 // Register a paid ticket to a user
 app.post("/register-paid-ticket", verifyJwt, async (req, res) => {
   const { eventId, ticketType, price } = req.body;
+  console.log("Received paid ticket:", req.body);
   const auth0Id = req.user.sub;
 
   try {
