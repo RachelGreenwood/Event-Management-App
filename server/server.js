@@ -306,6 +306,29 @@ app.post("/register-free-ticket", verifyJwt, async (req, res) => {
   }
 });
 
+// Updates event's analytics
+app.put("/events/:id", async (req, res) => {
+  const { id } = req.params;
+  const { tickets_sold, revenue } = req.body; // updated values
+
+  try {
+    const result = await pool.query(
+      `UPDATE events
+       SET tickets_sold = $1,
+           revenue = $2
+       WHERE id = $3
+       RETURNING *`,
+      [tickets_sold, revenue, id]
+    );
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error updating event" });
+  }
+});
+
+
 app.use("/api/profile", router);
 
 const PORT = process.env.PORT || 5000;

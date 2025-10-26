@@ -21,6 +21,8 @@ export default function Event() {
         if (!res.ok) throw new Error("Failed to fetch event");
         const data = await res.json();
         setEvent(data);
+        setTicketSales(data.tickets_sold || 0);
+        setRevenue(data.revenue || 0);
       } catch (err) {
         console.error(err);
       }
@@ -28,6 +30,28 @@ export default function Event() {
 
     fetchEvent();
   }, [eventId, getAccessTokenSilently]);
+
+  const handleTicketPurchase = async (amount) => {
+  try {
+    const res = await fetch(`http://localhost:5000/events/${eventId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tickets_sold: ticketSales + 1,
+        revenue: revenue + amount
+      }),
+    });
+
+    if (!res.ok) throw new Error("Failed to update event");
+
+    const updatedEvent = await res.json();
+    setTicketSales(updatedEvent.tickets_sold);
+    setRevenue(updatedEvent.revenue);
+  } catch (err) {
+    console.error("Error updating event:", err);
+  }
+};
+
 
   if (!event) return <p>Loading...</p>;
 
@@ -40,7 +64,7 @@ export default function Event() {
       <p>Schedule: {event.schedule}</p>
       <p>Performer: {event.performer}</p>
       <div>Tickets: {event.ticket_types?.map((t, i) => (
-        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} onTicketSold={() => {setTicketSales(prev => prev + 1); setRevenue(prev => prev + event.prices[i]);}} /></div>
+        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
       ))}</div>
       <Analytics ticketSales={ticketSales} revenue={revenue} />
     </div>
