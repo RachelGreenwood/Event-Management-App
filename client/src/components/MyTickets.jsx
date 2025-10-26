@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Link } from "react-router-dom";
 
 export default function MyTickets() {
     const [events, setEvents] = useState([]);
@@ -42,7 +43,7 @@ export default function MyTickets() {
                 <tbody>
                     {events.map((event) => (
                     <tr key={event.id}>
-                        <td>{event.event_name}</td>
+                        <td><Link to={`/event/${event.event_id}`}>{event.event_name}</Link></td>
                         <td>{new Date(event.event_date).toLocaleString()}</td>
                         <td>{event.venue}</td>
                     </tr>
