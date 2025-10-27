@@ -356,11 +356,15 @@ app.delete("/tickets/:ticketId", verifyJwt, async (req, res) => {
 app.post("/validate-ticket", verifyJwt, async (req, res) => {
   const { qrCode, eventId } = req.body;
 
+  if (!qrCode || !eventId) {
+    return res.status(400).json({ valid: false, message: "QR code and event ID are required" });
+  }
+
   try {
-    // Checks if ticket exists
+    // Fetch the ticket and related event info
     const ticketResult = await pool.query(
-      `SELECT t.id AS ticket_id, t.ticket_type, t.purchase_date, t.profile_id, t.qr_code,
-              e.name AS event_name, e.event_date
+      `SELECT t.id AS ticket_id, t.ticket_type, t.purchase_date, t.profile_id, t.qr_code, t.checked_in,
+              e.name AS event_name, e.event_date, e.venue
        FROM tickets t
        JOIN events e ON t.event_id = e.id
        WHERE t.qr_code = $1 AND t.event_id = $2`,
@@ -372,18 +376,21 @@ app.post("/validate-ticket", verifyJwt, async (req, res) => {
     }
 
     const ticket = ticketResult.rows[0];
+
     if (ticket.checked_in) {
       return res.status(400).json({ valid: false, message: "Ticket already used" });
     }
 
-    // Mark as checked in
-    await pool.query(
-      "UPDATE tickets SET checked_in = TRUE WHERE id = $1",
+    // Mark ticket as checked in
+    const updatedResult = await pool.query(
+      `UPDATE tickets
+       SET checked_in = TRUE
+       WHERE id = $1
+       RETURNING id AS ticket_id, ticket_type, purchase_date, profile_id, qr_code, checked_in`,
       [ticket.ticket_id]
     );
 
-
-    res.json({ valid: true, ticket });
+    res.json({ valid: true, ticket: updatedResult.rows[0] });
   } catch (err) {
     console.error("Error validating ticket:", err);
     res.status(500).json({ valid: false, message: "Server error" });

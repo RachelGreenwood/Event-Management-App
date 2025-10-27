@@ -63,6 +63,7 @@ export default function MyTickets() {
                     <th>Ticket Type</th>
                     <th></th>
                     <th>QR Code</th>
+                    <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -74,6 +75,8 @@ export default function MyTickets() {
                         <td>{event.ticket_type}</td>
                         <td><button onClick={() => handleDelete(event.ticket_id)}>Delete Event</button></td>
                         <td><img src={event.qr_code} alt="Ticket QR" width="150" /></td>
+                        <td>{event.checked_in ? "Checked In" : "Not Checked In"}</td>
+                   
                     </tr>
                     ))}
                 </tbody>
