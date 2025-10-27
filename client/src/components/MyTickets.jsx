@@ -38,6 +38,7 @@ export default function MyTickets() {
                     <th>Name</th>
                     <th>Date</th>
                     <th>Venue</th>
+                    <th>Ticket Type</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -46,6 +47,7 @@ export default function MyTickets() {
                         <td><Link to={`/event/${event.event_id}`}>{event.event_name}</Link></td>
                         <td>{new Date(event.event_date).toLocaleString()}</td>
                         <td>{event.venue}</td>
+                        <td>{event.ticket_type}</td>
                     </tr>
                     ))}
                 </tbody>
