@@ -328,6 +328,20 @@ app.put("/events/:id", async (req, res) => {
   }
 });
 
+// DELETEs a user's ticket
+app.delete("/tickets/:ticketId", verifyJwt, async (req, res) => {
+  const { ticketId } = req.params;
+
+  try {
+    await pool.query("DELETE FROM tickets WHERE id = $1", [ticketId]);
+    res.status(200).json({ message: "Ticket deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting ticket:", err);
+    res.status(500).json({ error: "Failed to delete ticket" });
+  }
+});
+
+
 
 app.use("/api/profile", router);
 

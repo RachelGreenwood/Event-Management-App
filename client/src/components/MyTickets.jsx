@@ -29,6 +29,27 @@ export default function MyTickets() {
     }
   };
 
+  // Deletes events
+  const handleDelete = async (ticketId) => {
+    if (!window.confirm("Are you sure you want to delete this ticket?")) return;
+
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`http://localhost:5000/tickets/${ticketId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to delete ticket");
+
+      setEvents((prev) => prev.filter((event) => event.id !== ticketId));
+    } catch (err) {
+      console.error("Error deleting ticket:", err);
+    }
+  };
+
     return (
         <div>
             <h1>My Tickets</h1>
@@ -39,15 +60,17 @@ export default function MyTickets() {
                     <th>Date</th>
                     <th>Venue</th>
                     <th>Ticket Type</th>
+                    <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {events.map((event) => (
-                    <tr key={event.id}>
+                    <tr key={event.ticket_id}>
                         <td><Link to={`/event/${event.event_id}`}>{event.event_name}</Link></td>
                         <td>{new Date(event.event_date).toLocaleString()}</td>
                         <td>{event.venue}</td>
                         <td>{event.ticket_type}</td>
+                        <td><button onClick={() => handleDelete(event.ticket_id)}>Delete Event</button></td>
                     </tr>
                     ))}
                 </tbody>
