@@ -5,6 +5,7 @@ import pool from "./db.js";
 import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import Stripe from "stripe";
+import QRCode from "qrcode";
 
 dotenv.config();
 const app = express();
@@ -208,7 +209,7 @@ app.get("/tickets/user", verifyJwt, async (req, res) => {
 
     // Join tickets with events to get event info
     const ticketsResult = await pool.query(
-      `SELECT t.id AS ticket_id, t.ticket_type, t.price, t.purchase_date,
+      `SELECT t.id AS ticket_id, t.ticket_type, t.price, t.purchase_date, t.qr_code,
               e.id AS event_id, e.name AS event_name, e.event_date, e.venue
        FROM tickets t
        JOIN events e ON t.event_id = e.id
@@ -249,7 +250,7 @@ app.post("/create-payment-intent", async (req, res) => {
 
 // Register a paid ticket to a user
 app.post("/register-paid-ticket", verifyJwt, async (req, res) => {
-  const { eventId, ticketType, price } = req.body;
+  const { eventId, profileId, ticketType, price } = req.body;
   console.log("Received paid ticket:", req.body);
   const auth0Id = req.user.sub;
 
@@ -262,12 +263,17 @@ app.post("/register-paid-ticket", verifyJwt, async (req, res) => {
       return res.status(404).json({ error: "User profile not found" });
 
     const profileId = profileResult.rows[0].id;
-
+    
+    // Generates QR code
+    const qrData = `${eventId}-${profileId}-${Date.now()}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+    
+    // Save ticket and QR code
     const ticketResult = await pool.query(
-      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date, qr_code)
+       VALUES ($1, $2, $3, $4, NOW(), $5)
        RETURNING *`,
-      [profileId, eventId, ticketType, price]
+      [profileId, eventId, ticketType, price, qrCodeDataUrl]
     );
 
     res.json(ticketResult.rows[0]);
@@ -279,7 +285,7 @@ app.post("/register-paid-ticket", verifyJwt, async (req, res) => {
 
 // Register a free ticket to a user
 app.post("/register-free-ticket", verifyJwt, async (req, res) => {
-  const { eventId } = req.body;
+  const { eventId, profileId, ticketType } = req.body;
   const auth0Id = req.user.sub;
 
   try {
@@ -292,11 +298,16 @@ app.post("/register-free-ticket", verifyJwt, async (req, res) => {
 
     const profileId = profileResult.rows[0].id;
 
+    // Generates QR code
+    const qrData = `${eventId}-${profileId}-${Date.now()}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(qrData);
+
+    // Save ticket + QR code
     const ticketResult = await pool.query(
-      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date)
-       VALUES ($1, $2, $3, $4, NOW())
+      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date, qr_code)
+       VALUES ($1, $2, $3, $4, NOW(), $5)
        RETURNING *`,
-      [profileId, eventId, "Free", 0]
+      [profileId, eventId, "Free", 0, qrCodeDataUrl]
     );
 
     res.json(ticketResult.rows[0]);

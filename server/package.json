@@ -18,6 +18,7 @@
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.2.0",
     "pg": "^8.16.3",
+    "qrcode": "^1.5.4",
     "stripe": "^19.1.0"
   },
   "devDependencies": {

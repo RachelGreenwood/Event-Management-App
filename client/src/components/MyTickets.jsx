@@ -23,6 +23,7 @@ export default function MyTickets() {
       if (!response.ok) throw new Error("Failed to fetch user events");
       const data = await response.json();
       console.log(data);
+      console.log("QR code for first ticket:", data[0]?.qr_code);
       setEvents(data);
     } catch (err) {
       console.error("Error fetching user events:", err);
@@ -61,6 +62,7 @@ export default function MyTickets() {
                     <th>Venue</th>
                     <th>Ticket Type</th>
                     <th></th>
+                    <th>QR Code</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -71,6 +73,7 @@ export default function MyTickets() {
                         <td>{event.venue}</td>
                         <td>{event.ticket_type}</td>
                         <td><button onClick={() => handleDelete(event.ticket_id)}>Delete Event</button></td>
+                        <td><img src={event.qr_code} alt="Ticket QR" width="150" /></td>
                     </tr>
                     ))}
                 </tbody>
