@@ -17,6 +17,7 @@ export default function Navbar({ profile }) {
                         <li><Link to="/my-events">My Events</Link></li>
                     )}
                     <li><Link to="/my-tickets">My Tickets</Link></li>
+                    <li><Link to="/scan-ticket">Scan Ticket</Link></li>
                 </ul>
             </nav>
         </div>

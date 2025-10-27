@@ -352,7 +352,43 @@ app.delete("/tickets/:ticketId", verifyJwt, async (req, res) => {
   }
 });
 
+// Validates QR code for event check-in
+app.post("/validate-ticket", verifyJwt, async (req, res) => {
+  const { qrCode, eventId } = req.body;
 
+  try {
+    // Checks if ticket exists
+    const ticketResult = await pool.query(
+      `SELECT t.id AS ticket_id, t.ticket_type, t.purchase_date, t.profile_id, t.qr_code,
+              e.name AS event_name, e.event_date
+       FROM tickets t
+       JOIN events e ON t.event_id = e.id
+       WHERE t.qr_code = $1 AND t.event_id = $2`,
+      [qrCode, eventId]
+    );
+
+    if (ticketResult.rows.length === 0) {
+      return res.status(404).json({ valid: false, message: "Ticket not found or invalid QR code" });
+    }
+
+    const ticket = ticketResult.rows[0];
+    if (ticket.checked_in) {
+      return res.status(400).json({ valid: false, message: "Ticket already used" });
+    }
+
+    // Mark as checked in
+    await pool.query(
+      "UPDATE tickets SET checked_in = TRUE WHERE id = $1",
+      [ticket.ticket_id]
+    );
+
+
+    res.json({ valid: true, ticket });
+  } catch (err) {
+    console.error("Error validating ticket:", err);
+    res.status(500).json({ valid: false, message: "Server error" });
+  }
+});
 
 app.use("/api/profile", router);
 
