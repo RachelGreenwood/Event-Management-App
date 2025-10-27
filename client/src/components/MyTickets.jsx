@@ -44,7 +44,7 @@ export default function MyTickets() {
 
       if (!response.ok) throw new Error("Failed to delete ticket");
 
-      setEvents((prev) => prev.filter((event) => event.id !== ticketId));
+      setEvents((prev) => prev.filter((event) => event.ticket_id !== ticketId));
     } catch (err) {
       console.error("Error deleting ticket:", err);
     }
