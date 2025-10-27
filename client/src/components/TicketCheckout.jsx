@@ -5,7 +5,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold, expired }) => {
+const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold, expired, profile }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [error, setError] = useState(null);
@@ -73,25 +73,27 @@ const CheckoutForm = ({ amount, userId, eventId, ticketType, onTicketSold, expir
 }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <CardElement />
-      <button type="submit" disabled={!stripe || expired}>
-        {expired
-          ? "Event Ended"
-          : amount === 0
-          ? "Get Ticket (Free)"
-          : `Pay $${amount}`}
-      </button>
-      {error && <div>{error}</div>}
-      {success && <div>Payment successful!</div>}
-    </form>
+    <div>{profile.role !== "organizer" && (
+      <form onSubmit={handleSubmit}>
+        <CardElement />
+        <button type="submit" disabled={!stripe || expired}>
+          {expired
+            ? "Event Ended"
+            : amount === 0
+            ? "Get Ticket (Free)"
+            : `Pay $${amount}`}
+        </button>
+        {error && <div>{error}</div>}
+        {success && <div>Payment successful!</div>}
+      </form>)}
+    </div>
   );
 };
 
-export default function TicketCheckout({ amount, userId, eventId, ticketType, onTicketSold, expired }) {
+export default function TicketCheckout({ amount, userId, eventId, ticketType, onTicketSold, expired, profile }) {
   return (
     <Elements stripe={stripePromise}>
-      <CheckoutForm amount={amount} userId={userId} eventId={eventId} ticketType={ticketType} onTicketSold={onTicketSold} expired={expired} />
+      <CheckoutForm amount={amount} userId={userId} profile={profile} eventId={eventId} ticketType={ticketType} onTicketSold={onTicketSold} expired={expired} />
     </Elements>
   );
 }

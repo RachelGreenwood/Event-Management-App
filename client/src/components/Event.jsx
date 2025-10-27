@@ -11,6 +11,7 @@ export default function Event() {
   const [ticketSales, setTicketSales] = useState(0);
   const [revenue, setRevenue] = useState(0);
   const [expired, setExpired] = useState(false);
+  const [profile, setProfile] = useState("");
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -46,6 +47,20 @@ export default function Event() {
   return () => clearInterval(interval);
 }, [event]);
 
+useEffect(() => {
+  const fetchProfile = async () => {
+    const token = await getAccessTokenSilently();
+    const res = await fetch("http://localhost:5000/api/profile", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setProfile(data);
+    }
+  };
+  fetchProfile();
+}, [getAccessTokenSilently]);
+
 
   const handleTicketPurchase = async (amount) => {
   try {
@@ -80,9 +95,9 @@ export default function Event() {
       <p>Schedule: {event.schedule}</p>
       <p>Performer: {event.performer}</p>
       <div>Tickets: {event.ticket_types?.map((t, i) => (
-        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
+        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} profile={profile} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
       ))}</div>
-      <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} />
+      <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} />
     </div>
   );
 }
