@@ -364,7 +364,7 @@ app.post("/validate-ticket", verifyJwt, async (req, res) => {
     // Fetch the ticket and related event info
     const ticketResult = await pool.query(
       `SELECT t.id AS ticket_id, t.ticket_type, t.purchase_date, t.profile_id, t.qr_code, t.checked_in,
-              e.name AS event_name, e.event_date, e.venue
+              e.id AS event_id, e.name AS event_name, e.event_date, e.venue
        FROM tickets t
        JOIN events e ON t.event_id = e.id
        WHERE t.qr_code = $1 AND t.event_id = $2`,
@@ -388,6 +388,14 @@ app.post("/validate-ticket", verifyJwt, async (req, res) => {
        WHERE id = $1
        RETURNING id AS ticket_id, ticket_type, purchase_date, profile_id, qr_code, checked_in`,
       [ticket.ticket_id]
+    );
+
+    // Increments event attendance count
+    await pool.query(
+      `UPDATE events
+       SET attendance_count = attendance_count + 1
+       WHERE id = $1`,
+      [ticket.event_id]
     );
 
     res.json({ valid: true, ticket: updatedResult.rows[0] });
