@@ -12,6 +12,8 @@ export default function Event() {
   const [revenue, setRevenue] = useState(0);
   const [expired, setExpired] = useState(false);
   const [profile, setProfile] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({});
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -23,6 +25,7 @@ export default function Event() {
         if (!res.ok) throw new Error("Failed to fetch event");
         const data = await res.json();
         setEvent(data);
+        setFormData(data);
         setTicketSales(data.tickets_sold || 0);
         setRevenue(data.revenue || 0);
       } catch (err) {
@@ -64,9 +67,12 @@ useEffect(() => {
 
   const handleTicketPurchase = async (amount) => {
   try {
+    const token = await getAccessTokenSilently();
     const res = await fetch(`http://localhost:5000/events/${eventId}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+       },
       body: JSON.stringify({
         tickets_sold: ticketSales + 1,
         revenue: revenue + amount
@@ -83,21 +89,95 @@ useEffect(() => {
   }
 };
 
+// Handle editing the event
+  const handleEditChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSaveEdits = async (e) => {
+    e.preventDefault();
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await fetch(`http://localhost:5000/events/${eventId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) throw new Error("Failed to save event edits");
+
+      const updated = await res.json();
+      setEvent(updated);
+      setEditMode(false);
+      alert("Event updated successfully!");
+    } catch (err) {
+      console.error("Error saving edits:", err);
+      alert("Failed to save event changes.");
+    }
+  };
 
   if (!event) return <p>Loading...</p>;
 
+   if (editMode) {
+    return (
+      <div>
+        <h1>Edit Event</h1>
+        <form onSubmit={handleSaveEdits}>
+          <input
+            name="name"
+            value={formData.name || ""}
+            onChange={handleEditChange}
+            placeholder="Event name"
+          />
+          <textarea
+            name="description"
+            value={formData.description || ""}
+            onChange={handleEditChange}
+            placeholder="Description"
+          />
+          <input
+            name="venue"
+            value={formData.venue || ""}
+            onChange={handleEditChange}
+            placeholder="Venue"
+          />
+          <textarea
+            name="schedule"
+            value={formData.schedule || ""}
+            onChange={handleEditChange}
+            placeholder="Schedule"
+          />
+          <input
+            name="performer"
+            value={formData.performer || ""}
+            onChange={handleEditChange}
+            placeholder="Performer"
+          />
+          <button type="submit">Save Changes</button>
+          <button type="button" onClick={() => setEditMode(false)}>
+            Cancel
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h1>{event.name}</h1>
-      <p>Description: {event.description}</p>
+      <h1>{formData.name}</h1>
+      <p>Description: {formData.description}</p>
       <p>Date: {new Date(event.event_date).toLocaleString()}</p>
-      <p>Venue:{event.venue}</p>
-      <p>Schedule: {event.schedule}</p>
-      <p>Performer: {event.performer}</p>
+      <p>Venue:{formData.venue}</p>
+      <p>Schedule: {formData.schedule}</p>
+      <p>Performer: {formData.performer}</p>
       <div>Tickets: {event.ticket_types?.map((t, i) => (
         <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} profile={profile} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
       ))}</div>
-      {(profile.role === "organizer" || "vendor") && <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} attendance={event.attendance_count} />}
+      <button onClick={() => setEditMode(true)}>Edit Event</button>
+      {(profile.role === "organizer" || profile.role === "vendor") && <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} attendance={event.attendance_count} />}
     </div>
   );
 }

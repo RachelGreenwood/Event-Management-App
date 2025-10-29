@@ -9,8 +9,16 @@ import QRCode from "qrcode";
 
 dotenv.config();
 const app = express();
+
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.put("/events/:id", (req, res) => {
+  console.log("🟢 PUT received, body:", req.body);
+  res.json({ message: "Body logged" });
+});
+
 
 // Sets up Auth0 authentication
 const client = jwksClient({
@@ -404,6 +412,79 @@ app.post("/validate-ticket", verifyJwt, async (req, res) => {
     res.status(500).json({ valid: false, message: "Server error" });
   }
 });
+
+app.put("/events/:id", async (req, res) => {
+  const eventId = parseInt(req.params.id, 10);
+  console.log("🟢 PUT /events/:id triggered with body:", req.body);
+  const {
+    name,
+    event_date,
+    end_date,
+    description,
+    ticket_types,
+    prices,
+    venue,
+    schedule,
+    performer,
+    tickets_sold,
+    revenue,
+  } = req.body;
+
+  console.log("➡️ PUT /events called with:");
+  console.log("Event ID:", eventId);
+  console.log("Body:", req.body);
+
+  try {
+    const query = `
+      UPDATE events
+      SET
+        name = COALESCE($1, name),
+        event_date = COALESCE($2, event_date),
+        end_date = COALESCE($3, end_date),
+        description = COALESCE($4, description),
+        ticket_types = COALESCE($5::text[], ticket_types),
+        prices = COALESCE($6::numeric[], prices),
+        venue = COALESCE($7, venue),
+        schedule = COALESCE($8, schedule),
+        performer = COALESCE($9, performer),
+        tickets_sold = COALESCE($10, tickets_sold),
+        revenue = COALESCE($11, revenue)
+      WHERE id = $12
+      RETURNING *;
+    `;
+
+    const values = [
+      name,
+      event_date,
+      end_date,
+      description,
+      ticket_types,
+      prices,
+      venue,
+      schedule,
+      performer,
+      tickets_sold,
+      revenue,
+      eventId,
+    ];
+
+    console.log("🔍 Running query with values:", values);
+
+    const result = await pool.query(query, values);
+
+    console.log("🧾 Query result:", result.rowCount, "rows affected");
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Event not found or no changes made" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("❌ Error updating event:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 app.use("/api/profile", router);
 
