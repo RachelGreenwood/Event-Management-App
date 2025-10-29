@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import Analytics from "./Analytics";
 import TicketCheckout from "./TicketCheckout";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function Event() {
   const { eventId } = useParams();
@@ -132,6 +134,19 @@ useEffect(() => {
             onChange={handleEditChange}
             placeholder="Event name"
           />
+          <DatePicker
+            selected={new Date(formData.event_date)}
+            onChange={(date) => setFormData({ ...formData, event_date: date })}
+            showTimeSelect
+            dateFormat="yyyy-MM-dd HH:mm"
+          />
+
+          <DatePicker
+            selected={new Date(formData.end_date)}
+            onChange={(date) => setFormData({ ...formData, end_date: date })}
+            showTimeSelect
+            dateFormat="yyyy-MM-dd HH:mm"
+          />
           <textarea
             name="description"
             value={formData.description || ""}
@@ -156,6 +171,47 @@ useEffect(() => {
             onChange={handleEditChange}
             placeholder="Performer"
           />
+          <div>
+    <h4>Tickets</h4>
+    {formData.ticket_types?.map((type, i) => (
+      <div key={i}>
+        <input
+          type="text"
+          value={formData.ticket_types[i]}
+          onChange={(e) => {
+            const newTickets = [...formData.ticket_types];
+            newTickets[i] = e.target.value;
+            setFormData({ ...formData, ticket_types: newTickets });
+          }}
+          placeholder="Ticket Type"
+        />
+        <input
+          type="number"
+          value={formData.prices[i]}
+          onChange={(e) => {
+            const newPrices = [...formData.prices];
+            newPrices[i] = Number(e.target.value);
+            setFormData({ ...formData, prices: newPrices });
+          }}
+          placeholder="Price"
+        />
+        <button type="button" onClick={() => {
+          const newTickets = [...formData.ticket_types];
+          const newPrices = [...formData.prices];
+          newTickets.splice(i, 1);
+          newPrices.splice(i, 1);
+          setFormData({ ...formData, ticket_types: newTickets, prices: newPrices });
+        }}>Remove</button>
+      </div>
+    ))}
+    <button type="button" onClick={() => {
+      setFormData({
+        ...formData,
+        ticket_types: [...(formData.ticket_types || []), ""],
+        prices: [...(formData.prices || []), 0]
+      });
+    }}>Add Ticket</button>
+  </div>
           <button type="submit">Save Changes</button>
           <button type="button" onClick={() => setEditMode(false)}>
             Cancel
@@ -169,12 +225,12 @@ useEffect(() => {
     <div>
       <h1>{formData.name}</h1>
       <p>Description: {formData.description}</p>
-      <p>Date: {new Date(event.event_date).toLocaleString()}</p>
+      <p>Date: {new Date(formData.event_date).toLocaleString()}</p>
       <p>Venue:{formData.venue}</p>
       <p>Schedule: {formData.schedule}</p>
       <p>Performer: {formData.performer}</p>
-      <div>Tickets: {event.ticket_types?.map((t, i) => (
-        <div key={i}><span>{t} (${event.prices[i]})</span><TicketCheckout amount={event.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={event.ticket_types[i]} profile={profile} onTicketSold={() => handleTicketPurchase(event.prices[i])} /></div>
+      <div>Tickets: {formData.ticket_types?.map((t, i) => (
+        <div key={i}><span>{t} (${formData.prices[i]})</span><TicketCheckout amount={formData.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={formData.ticket_types[i]} profile={profile} onTicketSold={() => handleTicketPurchase(formData.prices[i])} /></div>
       ))}</div>
       <button onClick={() => setEditMode(true)}>Edit Event</button>
       {(profile.role === "organizer" || profile.role === "vendor") && <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} attendance={event.attendance_count} />}
