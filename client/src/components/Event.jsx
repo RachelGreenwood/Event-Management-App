@@ -70,7 +70,7 @@ useEffect(() => {
   const handleTicketPurchase = async (amount) => {
   try {
     const token = await getAccessTokenSilently();
-    const res = await fetch(`http://localhost:5000/events/${eventId}`, {
+    const res = await fetch(`http://localhost:5000/analytics/${eventId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -98,6 +98,11 @@ useEffect(() => {
 
   const handleSaveEdits = async (e) => {
     e.preventDefault();
+    const cleanData = {
+      ...formData,
+      ticket_types: `{${(formData.ticket_types || []).join(",")}}`,
+      prices: `{${(formData.prices || []).join(",")}}`
+    };
     try {
       const token = await getAccessTokenSilently();
       const res = await fetch(`http://localhost:5000/events/${eventId}`, {
@@ -106,7 +111,7 @@ useEffect(() => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(cleanData),
       });
 
       if (!res.ok) throw new Error("Failed to save event edits");

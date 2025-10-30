@@ -14,9 +14,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.put("/events/:id", (req, res) => {
-  console.log("🟢 PUT received, body:", req.body);
-  res.json({ message: "Body logged" });
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.originalUrl}`);
+  next();
 });
 
 
@@ -326,7 +326,7 @@ app.post("/register-free-ticket", verifyJwt, async (req, res) => {
 });
 
 // Updates event's analytics
-app.put("/events/:id", async (req, res) => {
+app.put("/analytics/:id", async (req, res) => {
   const { id } = req.params;
   const { tickets_sold, revenue } = req.body; // updated values
 
@@ -430,10 +430,6 @@ app.put("/events/:id", async (req, res) => {
     revenue,
   } = req.body;
 
-  console.log("➡️ PUT /events called with:");
-  console.log("Event ID:", eventId);
-  console.log("Body:", req.body);
-
   try {
     const query = `
       UPDATE events
@@ -468,9 +464,12 @@ app.put("/events/:id", async (req, res) => {
       eventId,
     ];
 
-    console.log("🔍 Running query with values:", values);
+    console.log("Updating event:", eventId, { name, event_date, ticket_types, prices });
 
     const result = await pool.query(query, values);
+
+    console.log("Rows affected:", result.rowCount);
+    console.log("Result:", result.rows);
 
     console.log("🧾 Query result:", result.rowCount, "rows affected");
 
@@ -478,10 +477,55 @@ app.put("/events/:id", async (req, res) => {
       return res.status(404).json({ error: "Event not found or no changes made" });
     }
 
-    res.json(result.rows[0]);
+    const updatedEvent = result.rows[0];
+
+    // Notifies all attendees of the update
+    const attendees = await pool.query(
+      "SELECT DISTINCT profile_id FROM tickets WHERE event_id = $1",
+      [eventId]
+    )
+
+    const notification = `Your event ${updatedEvent.name} has been updated. Check the updated details!`;
+
+    for (const attendee of attendees.rows) {
+      await pool.query(
+        `INSERT INTO notifications (profile_id, event_id, message)
+        VALUES ($1, $2, $3)`,
+        [attendee.profile_id, eventId, notification]
+      );
+    }
+ 
+    res.json(updatedEvent);
   } catch (err) {
     console.error("❌ Error updating event:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/notifications", verifyJwt, async (req, res) => {
+  try {
+    const auth0Id = req.user.sub;
+    const profileResult = await pool.query(
+      "SELECT id FROM profiles WHERE auth0_id = $1",
+      [auth0Id]
+    );
+
+    if (profileResult.rows.length === 0)
+      return res.status(404).json({ error: "Profile not found" });
+
+    const profileId = profileResult.rows[0].id;
+
+    const notifications = await pool.query(
+      `SELECT * FROM notifications
+       WHERE profile_id = $1
+       ORDER BY created_at DESC`,
+      [profileId]
+    );
+
+    res.json(notifications.rows);
+  } catch (err) {
+    console.error("Error fetching notifications:", err);
+    res.status(500).json({ error: "Failed to fetch notifications" });
   }
 });
 
