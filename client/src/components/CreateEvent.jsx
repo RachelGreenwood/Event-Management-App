@@ -15,6 +15,7 @@ export default function CreateEvent({userId}) {
       venue: "",
       schedule: "",
       performer: "",
+      max_capacity: ""
   });
 
     // Updates form with user's input
@@ -129,6 +130,10 @@ export default function CreateEvent({userId}) {
             <div>
               <label>Performer: </label>
               <input type="text" name="performer" onChange={handleChange} value={formData.performer} />
+            </div>
+            <div>
+              <label>Maximum Attendance Capacity: </label>
+              <input type="number" name="max_capacity" value={formData.max_capacity} onChange={handleChange} />
             </div>
             <button type="submit">Create Event</button>
         </form>
