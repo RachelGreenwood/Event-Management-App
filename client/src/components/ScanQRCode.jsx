@@ -2,28 +2,37 @@ import { useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import QrReader from "react-qr-reader-es6";
 
-export default function ScanQRCode({ eventId }) {
+export default function ScanQRCode() {
   const { getAccessTokenSilently } = useAuth0();
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleScan = async (data) => {
-    if (!data || loading) return; // avoid multiple scans
+    if (!data || loading) return; // prevent multiple scans
     setLoading(true);
     setError("");
     setScanResult(null);
 
     try {
+      const [eventIdFromQr, profileId, timestamp] = data.split("-");
+      const qrCode = data; // send full QR code string to backend
+
       const token = await getAccessTokenSilently();
+
       const res = await fetch("http://localhost:5000/validate-ticket", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ qrCode: data, eventId }),
+        body: JSON.stringify({ qrCode }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || "Ticket validation failed");
+      }
 
       const response = await res.json();
 
@@ -40,7 +49,7 @@ export default function ScanQRCode({ eventId }) {
       }
     } catch (err) {
       console.error("Error validating ticket:", err);
-      setError("Error validating ticket. Please try again.");
+      setError(err.message || "Error validating ticket. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -54,11 +63,10 @@ export default function ScanQRCode({ eventId }) {
   return (
     <div>
       <h1>Scan QR Code</h1>
-      <div>
-        <QrReader delay={500} onError={handleError} onScan={handleScan} />
-      </div>
+      <QrReader delay={500} onError={handleError} onScan={handleScan} />
+
       {loading && <p>Validating ticket...</p>}
-      {error && <p>{error}</p>}
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       {scanResult && (
         <div>
@@ -72,13 +80,19 @@ export default function ScanQRCode({ eventId }) {
                 <strong>Purchased:</strong>{" "}
                 {new Date(scanResult.details.purchase_date).toLocaleString()}
               </p>
-              <p>
-                <strong>Event:</strong> {scanResult.details.event_name}
-              </p>
-              <p>
-                <strong>Date:</strong>{" "}
-                {new Date(scanResult.details.event_date).toLocaleDateString()}
-              </p>
+              {scanResult.details.event_name && (
+                <>
+                  <p>
+                    <strong>Event:</strong> {scanResult.details.event_name}
+                  </p>
+                  <p>
+                    <strong>Date:</strong>{" "}
+                    {scanResult.details.event_date
+                      ? new Date(scanResult.details.event_date).toLocaleDateString()
+                      : "TBA"}
+                  </p>
+                </>
+              )}
             </div>
           )}
           {scanResult.message && <p>{scanResult.message}</p>}

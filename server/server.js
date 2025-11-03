@@ -14,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.originalUrl}`);
   next();
@@ -279,10 +280,10 @@ app.post("/register-paid-ticket", verifyJwt, async (req, res) => {
     
     // Save ticket and QR code
     const ticketResult = await pool.query(
-      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date, qr_code)
-       VALUES ($1, $2, $3, $4, NOW(), $5)
+      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date, qr_code, qr_data)
+       VALUES ($1, $2, $3, $4, NOW(), $5, $6)
        RETURNING *`,
-      [profileId, eventId, ticketType, price, qrCodeDataUrl]
+      [profileId, eventId, ticketType, price, qrCodeDataUrl, qrData]
     );
 
     res.json(ticketResult.rows[0]);
@@ -311,12 +312,16 @@ app.post("/register-free-ticket", verifyJwt, async (req, res) => {
     const qrData = `${eventId}-${profileId}-${Date.now()}`;
     const qrCodeDataUrl = await QRCode.toDataURL(qrData);
 
+    console.log("Length of qrCodeDataUrl:", qrCodeDataUrl.length);
+console.log("First 50 chars:", qrCodeDataUrl.slice(0, 50));
+
+
     // Save ticket + QR code
     const ticketResult = await pool.query(
-      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date, qr_code)
-       VALUES ($1, $2, $3, $4, NOW(), $5)
+      `INSERT INTO tickets (profile_id, event_id, ticket_type, price, purchase_date, qr_code, qr_data)
+       VALUES ($1, $2, $3, $4, NOW(), $5, $6)
        RETURNING *`,
-      [profileId, eventId, "Free", 0, qrCodeDataUrl]
+      [profileId, eventId, "Free", 0, qrCodeDataUrl, qrData]
     );
 
     res.json(ticketResult.rows[0]);
@@ -363,21 +368,23 @@ app.delete("/tickets/:ticketId", verifyJwt, async (req, res) => {
 
 // Validates QR code for event check-in
 app.post("/validate-ticket", verifyJwt, async (req, res) => {
-  const { qrCode, eventId } = req.body;
+  const { qrCode } = req.body;
+  console.log("Received QR validation request:", req.body);
 
-  if (!qrCode || !eventId) {
+  if (!qrCode) {
     return res.status(400).json({ valid: false, message: "QR code and event ID are required" });
   }
 
   try {
-    // Fetch the ticket and related event info
     const ticketResult = await pool.query(
-      `SELECT t.id AS ticket_id, t.ticket_type, t.purchase_date, t.profile_id, t.qr_code, t.checked_in,
-              e.id AS event_id, e.name AS event_name, e.event_date, e.venue
-       FROM tickets t
-       JOIN events e ON t.event_id = e.id
-       WHERE t.qr_code = $1 AND t.event_id = $2`,
-      [qrCode, eventId]
+      `
+      SELECT t.id AS ticket_id, t.ticket_type, t.purchase_date, t.profile_id, t.qr_code, t.checked_in,
+             e.id AS event_id, e.name AS event_name, e.event_date, e.venue
+      FROM tickets t
+      JOIN events e ON t.event_id = e.id
+      WHERE t.qr_data = $1
+      `,
+      [qrCode]
     );
 
     if (ticketResult.rows.length === 0) {
@@ -387,32 +394,45 @@ app.post("/validate-ticket", verifyJwt, async (req, res) => {
     const ticket = ticketResult.rows[0];
 
     if (ticket.checked_in) {
-      return res.status(400).json({ valid: false, message: "Ticket already used" });
+      return res.status(400).json({ valid: false, message: "Ticket already checked in" });
     }
 
-    // Mark ticket as checked in
-    const updatedResult = await pool.query(
-      `UPDATE tickets
-       SET checked_in = TRUE
-       WHERE id = $1
-       RETURNING id AS ticket_id, ticket_type, purchase_date, profile_id, qr_code, checked_in`,
+    // Mark ticket as checked-in
+    const updatedTicket = await pool.query(
+      `
+      UPDATE tickets
+      SET checked_in = TRUE
+      WHERE id = $1
+      RETURNING id AS ticket_id, ticket_type, purchase_date, profile_id, qr_code, checked_in
+      `,
       [ticket.ticket_id]
     );
 
-    // Increments event attendance count
+    // Optionally increment event attendance count
     await pool.query(
-      `UPDATE events
-       SET attendance_count = attendance_count + 1
-       WHERE id = $1`,
+      `
+      UPDATE events
+      SET attendance_count = attendance_count + 1
+      WHERE id = $1
+      `,
       [ticket.event_id]
     );
 
-    res.json({ valid: true, ticket: updatedResult.rows[0] });
+    res.json({
+      valid: true,
+      ticket: {
+        ...updatedTicket.rows[0],
+        event_name: ticket.event_name,
+        event_date: ticket.event_date,
+        venue: ticket.venue,
+      },
+    });
   } catch (err) {
     console.error("Error validating ticket:", err);
     res.status(500).json({ valid: false, message: "Server error" });
   }
 });
+
 
 app.put("/events/:id", async (req, res) => {
   const eventId = parseInt(req.params.id, 10);
@@ -529,7 +549,6 @@ app.get("/notifications", verifyJwt, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch notifications" });
   }
 });
-
 
 app.use("/api/profile", router);
 
