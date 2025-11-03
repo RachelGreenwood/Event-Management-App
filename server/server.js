@@ -6,9 +6,16 @@ import jwt from "jsonwebtoken";
 import jwksClient from "jwks-rsa";
 import Stripe from "stripe";
 import QRCode from "qrcode";
+import webpush from "web-push";
 
 dotenv.config();
 const app = express();
+
+webpush.setVapidDetails(
+  "mailto:rachelgreenwood3301@gmail.com",
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 app.use(cors());
 app.use(express.json());
@@ -434,9 +441,8 @@ app.post("/validate-ticket", verifyJwt, async (req, res) => {
 });
 
 
-app.put("/events/:id", async (req, res) => {
+app.put("/events/:id", verifyJwt, async (req, res) => {
   const eventId = parseInt(req.params.id, 10);
-  console.log("🟢 PUT /events/:id triggered with body:", req.body);
   const {
     name,
     event_date,
@@ -448,9 +454,10 @@ app.put("/events/:id", async (req, res) => {
     schedule,
     performer,
     tickets_sold,
-    revenue,
+    revenue
   } = req.body;
 
+  // Updates event
   try {
     const query = `
       UPDATE events
@@ -482,17 +489,10 @@ app.put("/events/:id", async (req, res) => {
       performer,
       tickets_sold,
       revenue,
-      eventId,
+      eventId
     ];
 
-    console.log("Updating event:", eventId, { name, event_date, ticket_types, prices });
-
     const result = await pool.query(query, values);
-
-    console.log("Rows affected:", result.rowCount);
-    console.log("Result:", result.rows);
-
-    console.log("🧾 Query result:", result.rowCount, "rows affected");
 
     if (result.rowCount === 0) {
       return res.status(404).json({ error: "Event not found or no changes made" });
@@ -500,25 +500,56 @@ app.put("/events/:id", async (req, res) => {
 
     const updatedEvent = result.rows[0];
 
-    // Notifies all attendees of the update
-    const attendees = await pool.query(
-      "SELECT DISTINCT profile_id FROM tickets WHERE event_id = $1",
+    // Shares notifications on attendees' dashboards
+    const attendeesResult = await pool.query(
+      `SELECT DISTINCT profile_id FROM tickets WHERE event_id = $1`,
       [eventId]
-    )
+    );
 
-    const notification = `Your event ${updatedEvent.name} has been updated. Check the updated details!`;
+    const notificationMessage = `Your event "${updatedEvent.name}" has been updated. Check the new details!`;
 
-    for (const attendee of attendees.rows) {
+    for (const attendee of attendeesResult.rows) {
       await pool.query(
         `INSERT INTO notifications (profile_id, event_id, message)
-        VALUES ($1, $2, $3)`,
-        [attendee.profile_id, eventId, notification]
+         VALUES ($1, $2, $3)`,
+        [attendee.profile_id, eventId, notificationMessage]
       );
     }
- 
+
+// Sends browser push notifications to attendees
+    const subscriptionsResult = await pool.query(
+      `SELECT ps.endpoint, ps.p256dh, ps.auth
+       FROM tickets t
+       JOIN push_subscriptions ps ON ps.user_id = t.profile_id
+       WHERE t.event_id = $1`,
+      [eventId]
+    );
+
+    const payload = JSON.stringify({
+      title: "Event Updated!",
+      body: `An event you’re attending has new details — check your dashboard.`,
+      url: `/events/${eventId}`
+    });
+
+    for (const sub of subscriptionsResult.rows) {
+      if (!sub.endpoint) continue; // safety check
+
+      const subscription = {
+        endpoint: sub.endpoint,
+        keys: { p256dh: sub.p256dh, auth: sub.auth }
+      };
+
+      try {
+        await webpush.sendNotification(subscription, payload);
+      } catch (err) {
+        console.error("Push error:", err);
+      }
+    }
+
     res.json(updatedEvent);
+
   } catch (err) {
-    console.error("❌ Error updating event:", err);
+    console.error("Error updating event:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -549,6 +580,60 @@ app.get("/notifications", verifyJwt, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch notifications" });
   }
 });
+
+// Save push notification subscription for logged-in user
+app.post("/api/subscribe", verifyJwt, async (req, res) => {
+  const { subscription } = req.body;
+
+  // Validate subscription payload
+  if (
+    !subscription ||
+    !subscription.endpoint ||
+    !subscription.keys ||
+    !subscription.keys.p256dh ||
+    !subscription.keys.auth
+  ) {
+    return res.status(400).json({ error: "Invalid subscription object" });
+  }
+
+  try {
+    const profileResult = await pool.query(
+      "SELECT id FROM profiles WHERE auth0_id = $1",
+      [req.user.sub]
+    );
+
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    const userId = profileResult.rows[0].id; // numeric FK
+
+    const insertQuery = `
+      INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (endpoint) DO NOTHING
+      RETURNING *;
+    `;
+    const values = [
+      userId,
+      subscription.endpoint,
+      subscription.keys.p256dh,
+      subscription.keys.auth
+    ];
+
+    const insertResult = await pool.query(insertQuery, values);
+
+    if (insertResult.rows.length === 0) {
+      return res.status(200).json({ message: "Subscription already exists" });
+    }
+
+    res.status(201).json({ message: "Subscription saved", subscription: insertResult.rows[0] });
+  } catch (err) {
+    console.error("Error saving subscription:", err);
+    res.status(500).json({ error: "Failed to save subscription" });
+  }
+});
+
 
 app.use("/api/profile", router);
 
