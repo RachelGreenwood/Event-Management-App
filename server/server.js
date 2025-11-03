@@ -226,7 +226,7 @@ app.get("/tickets/user", verifyJwt, async (req, res) => {
 
     // Join tickets with events to get event info
     const ticketsResult = await pool.query(
-      `SELECT t.id AS ticket_id, t.ticket_type, t.price, t.purchase_date, t.qr_code,
+      `SELECT t.id AS ticket_id, t.ticket_type, t.price, t.purchase_date, t.qr_code, t.checked_in,
               e.id AS event_id, e.name AS event_name, e.event_date, e.venue
        FROM tickets t
        JOIN events e ON t.event_id = e.id
