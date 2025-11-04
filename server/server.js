@@ -454,7 +454,8 @@ app.put("/events/:id", verifyJwt, async (req, res) => {
     schedule,
     performer,
     tickets_sold,
-    revenue
+    revenue,
+    max_capacity
   } = req.body;
 
   try {
@@ -472,15 +473,16 @@ app.put("/events/:id", verifyJwt, async (req, res) => {
         schedule = COALESCE($8, schedule),
         performer = COALESCE($9, performer),
         tickets_sold = COALESCE($10, tickets_sold),
-        revenue = COALESCE($11, revenue)
-      WHERE id = $12
+        revenue = COALESCE($11, revenue),
+        max_capacity = COALESCE($12, max_capacity)
+      WHERE id = $13
       RETURNING *;
     `;
 
     const values = [
       name, event_date, end_date, description,
       ticket_types, prices, venue, schedule, performer,
-      tickets_sold, revenue, eventId
+      tickets_sold, revenue, max_capacity, eventId
     ];
 
     const result = await pool.query(query, values);

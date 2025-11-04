@@ -176,6 +176,12 @@ useEffect(() => {
             onChange={handleEditChange}
             placeholder="Performer"
           />
+          <input
+            name="max_capacity"
+            value={formData.max_capacity || ""}
+            onChange={handleEditChange}
+            placeholder="Max. Capacity"
+          />
           <div>
     <h4>Tickets</h4>
     {formData.ticket_types?.map((type, i) => (
@@ -238,7 +244,7 @@ useEffect(() => {
         <div key={i}><span>{t} (${formData.prices[i]})</span><TicketCheckout amount={formData.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={formData.ticket_types[i]} profile={profile} onTicketSold={() => handleTicketPurchase(formData.prices[i])} /></div>
       ))}</div>
       <button onClick={() => setEditMode(true)}>Edit Event</button>
-      {(profile.role === "organizer" || profile.role === "vendor") && <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} attendance={event.attendance_count} capacity={event.max_capacity} />}
+      {(profile.role === "organizer" || profile.role === "vendor") && <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} attendance={event.attendance_count} capacity={formData.max_capacity} />}
     </div>
   );
 }
