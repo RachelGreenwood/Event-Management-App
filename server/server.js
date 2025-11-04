@@ -7,6 +7,7 @@ import jwksClient from "jwks-rsa";
 import Stripe from "stripe";
 import QRCode from "qrcode";
 import webpush from "web-push";
+import { sendEventUpdateEmail } from "./emailService.js";
 
 dotenv.config();
 const app = express();
@@ -440,7 +441,6 @@ app.post("/validate-ticket", verifyJwt, async (req, res) => {
   }
 });
 
-
 app.put("/events/:id", verifyJwt, async (req, res) => {
   const eventId = parseInt(req.params.id, 10);
   const {
@@ -457,8 +457,8 @@ app.put("/events/:id", verifyJwt, async (req, res) => {
     revenue
   } = req.body;
 
-  // Updates event
   try {
+    // 1. Update the event
     const query = `
       UPDATE events
       SET
@@ -478,18 +478,9 @@ app.put("/events/:id", verifyJwt, async (req, res) => {
     `;
 
     const values = [
-      name,
-      event_date,
-      end_date,
-      description,
-      ticket_types,
-      prices,
-      venue,
-      schedule,
-      performer,
-      tickets_sold,
-      revenue,
-      eventId
+      name, event_date, end_date, description,
+      ticket_types, prices, venue, schedule, performer,
+      tickets_sold, revenue, eventId
     ];
 
     const result = await pool.query(query, values);
@@ -500,23 +491,26 @@ app.put("/events/:id", verifyJwt, async (req, res) => {
 
     const updatedEvent = result.rows[0];
 
-    // Shares notifications on attendees' dashboards
+    // 2. Get attendees
     const attendeesResult = await pool.query(
       `SELECT DISTINCT profile_id FROM tickets WHERE event_id = $1`,
       [eventId]
     );
 
+    const attendeeIds = attendeesResult.rows.map(a => a.profile_id);
+
+    // 3. Insert dashboard notifications
     const notificationMessage = `Your event "${updatedEvent.name}" has been updated. Check the new details!`;
 
-    for (const attendee of attendeesResult.rows) {
+    for (const profileId of attendeeIds) {
       await pool.query(
         `INSERT INTO notifications (profile_id, event_id, message)
          VALUES ($1, $2, $3)`,
-        [attendee.profile_id, eventId, notificationMessage]
+        [profileId, eventId, notificationMessage]
       );
     }
 
-// Sends browser push notifications to attendees
+    // 4. Send browser push notifications
     const subscriptionsResult = await pool.query(
       `SELECT ps.endpoint, ps.p256dh, ps.auth
        FROM tickets t
@@ -532,18 +526,32 @@ app.put("/events/:id", verifyJwt, async (req, res) => {
     });
 
     for (const sub of subscriptionsResult.rows) {
-      if (!sub.endpoint) continue; // safety check
+      if (!sub.endpoint) continue;
+      const subscription = { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } };
+      try { await webpush.sendNotification(subscription, payload); }
+      catch (err) { console.error("Push error:", err); }
+    }
 
-      const subscription = {
-        endpoint: sub.endpoint,
-        keys: { p256dh: sub.p256dh, auth: sub.auth }
-      };
+    // 5. Send email notifications
+    const emailsResult = await pool.query(
+      `SELECT DISTINCT u.email
+       FROM tickets t
+       JOIN profiles u ON u.id = t.profile_id
+       WHERE t.event_id = $1`,
+      [eventId]
+    );
 
-      try {
-        await webpush.sendNotification(subscription, payload);
-      } catch (err) {
-        console.error("Push error:", err);
-      }
+    const attendeeEmails = emailsResult.rows.map(row => row.email);
+    console.log("Attendee emails:", attendeeEmails);  // <-- add this
+
+    if (attendeeEmails.length > 0) {
+      await sendEventUpdateEmail(attendeeEmails, {
+        title: updatedEvent.name,
+        date: updatedEvent.event_date,
+        venue: updatedEvent.venue,
+        description: updatedEvent.description,
+        link: `/events/${eventId}`
+      });
     }
 
     res.json(updatedEvent);
