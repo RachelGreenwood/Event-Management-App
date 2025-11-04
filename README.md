@@ -1,8 +1,5 @@
 # Eventage
 
-## Link to Live Site
-[Kyu to Dan](https://kyutodan.onrender.com/)
-
 ## Project Overview
 This is a fullstack PERN (PostgreSQL, Express, React, Node.js) event and ticket management application with Auth0 authentication and Stripe for ticket purchasing.
 
@@ -143,6 +140,7 @@ This project uses several key libraries to support backend functionality — inc
 
 - **pg** — PostgreSQL client for Node.js; handles SQL queries, transactions, and connections to the database.  
 - **./db.js** — Custom module that initializes a `pg.Pool` connection to PostgreSQL using your environment variables.  
+- **
 
 ---
 
@@ -295,6 +293,15 @@ Stores browser push subscription data for sending Web Push notifications.
 - **profiles → push_subscriptions**: `profiles.id = push_subscriptions.user_id`  
 
 This schema ensures referential integrity and allows efficient querying of events, tickets, and notifications.
+
+## Database Dump
+
+A PostgreSQL dump file `event_management.dump` is included for easy setup of the database.  
+To restore the database:
+
+```bash
+createdb -U <your_postgres_username> event_management
+pg_restore -U <your_postgres_username> -h localhost -d event_management -v event_management.dump```
 
 # 🛣️ API Routes
 
