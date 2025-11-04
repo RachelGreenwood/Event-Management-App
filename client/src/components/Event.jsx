@@ -238,7 +238,7 @@ useEffect(() => {
         <div key={i}><span>{t} (${formData.prices[i]})</span><TicketCheckout amount={formData.prices[i]} expired={expired} userId={user?.sub} eventId={eventId} ticketType={formData.ticket_types[i]} profile={profile} onTicketSold={() => handleTicketPurchase(formData.prices[i])} /></div>
       ))}</div>
       <button onClick={() => setEditMode(true)}>Edit Event</button>
-      {(profile.role === "organizer" || profile.role === "vendor") && <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} attendance={event.attendance_count} />}
+      {(profile.role === "organizer" || profile.role === "vendor") && <Analytics ticketSales={ticketSales} revenue={revenue} expired={expired} profile={profile} attendance={event.attendance_count} capacity={event.max_capacity} />}
     </div>
   );
 }

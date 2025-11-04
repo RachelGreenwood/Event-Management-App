@@ -1,4 +1,4 @@
-export default function Analytics({ ticketSales, revenue, expired, attendance }) {
+export default function Analytics({ ticketSales, revenue, expired, attendance, capacity }) {
 
     // Exports analytics report as CSV
     const exportCSV = () => {
@@ -27,6 +27,7 @@ export default function Analytics({ ticketSales, revenue, expired, attendance })
             <h1>{!expired ? "See Your Analytics" : "Post-Event Feedback Analytics"}</h1>
             <p>Ticket Sales: {ticketSales} </p>
             <p>Attendance: {attendance} </p>
+            <p>Max. Capacity: {capacity} </p>
             <p>Revenue Earned (in USD): {revenue} </p>
             <button onClick={exportCSV}>{expired ? "Export as CSV" : ""}</button>
         </div>
